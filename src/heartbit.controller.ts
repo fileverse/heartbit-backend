@@ -13,7 +13,7 @@ export class HeartbitController {
     return 'Hello World!';
   }
 
-  @Post()
+  @Post('signed-mint')
   async signatureMint(@Body() body: SignatureMint): Promise<MintResponse> {
     const response = await this.heartbitService.signatureMint(body);
     return response;

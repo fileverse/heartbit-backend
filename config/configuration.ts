@@ -6,4 +6,7 @@ export default () => ({
     privateKey: process.env.HEARTBIT_PRIVATE_KEY,
     contractAddress: process.env.HEARTBIT_CONTRACT_ADDRESS,
   },
+  auth: {
+    apiKey: process.env.AUTH_API_KEY,
+  },
 });
