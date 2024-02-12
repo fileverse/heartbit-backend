@@ -62,6 +62,9 @@ export class HeartbitService {
       input.hash,
       '0x00',
     );
+    (async () => {
+      await txn.wait();
+    })();
     return { success: true, txnHash: txn.hash };
   };
 
