@@ -2,6 +2,7 @@ import { Controller, Post, Get, Body } from '@nestjs/common';
 import { HeartbitService } from './heartbit.service';
 import AddressMint from './dtos/address-mint.input';
 import SignatureMint from './dtos/signature-mint.input';
+import MintResponse from './dtos/mint.response';
 
 @Controller()
 export class HeartbitController {
@@ -12,13 +13,13 @@ export class HeartbitController {
   }
 
   @Post()
-  async addressMint(@Body() body: AddressMint): Promise<any> {
+  async addressMint(@Body() body: AddressMint): Promise<MintResponse> {
     const response = await this.heartbitService.addressMint(body);
     return response;
   }
 
   @Post()
-  async signatureMint(@Body() body: SignatureMint): Promise<any> {
+  async signatureMint(@Body() body: SignatureMint): Promise<MintResponse> {
     const response = await this.heartbitService.signatureMint(body);
     return response;
   }
