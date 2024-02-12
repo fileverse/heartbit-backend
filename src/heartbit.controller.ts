@@ -1,7 +1,7 @@
 import { Controller, Post, Get, Body } from '@nestjs/common';
 import { HeartbitService } from './heartbit.service';
-import AddressMint from './dtos/address-mint.dto';
-import SignatureMint from './dtos/signature-mint.dto';
+import AddressMint from './dtos/address-mint.input';
+import SignatureMint from './dtos/signature-mint.input';
 
 @Controller()
 export class HeartbitController {

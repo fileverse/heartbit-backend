@@ -7,44 +7,16 @@ import {
   type Signer,
   type Contract,
 } from 'ethers';
+
+import AddressMintInput from './dtos/address-mint.input';
+import SignatureMintInput from './dtos/signature-mint.input';
+import MintInput from './dtos/mint.input';
+import MintResponse from './dtos/mint.response';
+
+import RecoverAddressInput from './dtos/recover-address.input';
+import RecoverAddressResponse from './dtos/recover-address.response';
+
 import { Injectable } from '@nestjs/common';
-
-interface RecoverAddressInput {
-  message: string;
-  signature: string;
-}
-
-interface RecoverAddressResponse {
-  account: string;
-}
-
-interface MintHeartbitInput {
-  account: string;
-  startTime: number;
-  endTime: number;
-  hash: string;
-}
-
-interface MintHeartbitResponse {
-  success: boolean;
-  txnHash?: string;
-  message?: string;
-}
-
-interface AddressMintInput {
-  account: string;
-  startTime: number;
-  endTime: number;
-  hash: string;
-}
-
-interface SignatureMintInput {
-  message: string;
-  signature: string;
-  startTime: number;
-  endTime: number;
-  hash: string;
-}
 
 @Injectable()
 export class HeartbitService {
@@ -82,7 +54,7 @@ export class HeartbitService {
     this.contract = new ethers.Contract(this.contractAddress, ABI, this.signer);
   }
 
-  mintHeartbit = async (input: MintHeartbitInput) => {
+  mintHeartbit = async (input: MintInput): Promise<MintResponse> => {
     const txn = await this.contract.mint(
       input.account,
       input.startTime,
@@ -90,12 +62,10 @@ export class HeartbitService {
       input.hash,
       '0x00',
     );
-    return { success: true, txnHash: txn.hash, txn };
+    return { success: true, txnHash: txn.hash };
   };
 
-  addressMint = async (
-    input: AddressMintInput,
-  ): Promise<MintHeartbitResponse> => {
+  addressMint = async (input: AddressMintInput): Promise<MintResponse> => {
     const response = await this.mintHeartbit(input);
     return response;
   };
@@ -106,9 +76,7 @@ export class HeartbitService {
     return { account };
   }
 
-  signatureMint = async (
-    input: SignatureMintInput,
-  ): Promise<MintHeartbitResponse> => {
+  signatureMint = async (input: SignatureMintInput): Promise<MintResponse> => {
     const { account } = await this.recover({
       message: input.message,
       signature: input.signature,
