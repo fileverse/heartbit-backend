@@ -16,10 +16,12 @@ import MintResponse from './dtos/mint.response';
 import RecoverAddressInput from './dtos/recover-address.input';
 import RecoverAddressResponse from './dtos/recover-address.response';
 
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 @Injectable()
 export class HeartbitService {
+  private readonly logger = new Logger(HeartbitService.name);
+
   private network: string;
   private alchemyApiKey: string;
   private privateKey: string;
@@ -55,6 +57,7 @@ export class HeartbitService {
   }
 
   mintHeartbit = async (input: MintInput): Promise<MintResponse> => {
+    this.logger.debug(input);
     const txn = await this.contract.mint(
       input.account,
       input.startTime,
@@ -65,11 +68,15 @@ export class HeartbitService {
     (async () => {
       await txn.wait();
     })();
-    return { success: true, txnHash: txn.hash };
+    const response = { success: true, txnHash: txn.hash };
+    this.logger.debug(response);
+    return response;
   };
 
   addressMint = async (input: AddressMintInput): Promise<MintResponse> => {
+    this.logger.debug(input);
     const response = await this.mintHeartbit(input);
+    this.logger.debug(response);
     return response;
   };
 
@@ -80,6 +87,7 @@ export class HeartbitService {
   }
 
   signatureMint = async (input: SignatureMintInput): Promise<MintResponse> => {
+    this.logger.debug(input);
     const { account } = await this.recover({
       message: input.message,
       signature: input.signature,
@@ -90,6 +98,7 @@ export class HeartbitService {
       endTime: input.endTime,
       hash: input.hash,
     });
+    this.logger.debug(response);
     return response;
   };
 }
