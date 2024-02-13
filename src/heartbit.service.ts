@@ -1,12 +1,24 @@
 import { ConfigService } from '@nestjs/config';
 import * as ABI from './abi.json';
 import {
-  ethers,
-  type AlchemyProvider,
-  type Wallet,
-  type Signer,
-  type Contract,
-} from 'ethers';
+  type Address,
+  createPublicClient,
+  encodeFunctionData,
+  http,
+  recoverMessageAddress,
+} from 'viem';
+
+import { createPimlicoPaymasterClient } from 'permissionless/clients/pimlico';
+
+import { privateKeyToSafeSmartAccount } from 'permissionless/accounts';
+import { bundlerActions, createSmartAccountClient } from 'permissionless';
+import { pimlicoBundlerActions } from 'permissionless/actions/pimlico';
+import { sepolia } from 'viem/chains';
+import { privateKeyToAccount } from 'viem/accounts';
+
+const apiKey = process.env.PIMLICO_API_KEY;
+const paymasterUrl = `https://api.pimlico.io/v2/sepolia/rpc?apikey=${apiKey}`;
+const bundlerUrl = `https://api.pimlico.io/v1/sepolia/rpc?apikey=${apiKey}`;
 
 import AddressMintInput from './dtos/address-mint.input';
 import SignatureMintInput from './dtos/signature-mint.input';
@@ -20,52 +32,70 @@ import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class HeartbitService {
-  private network: string;
-  private alchemyApiKey: string;
   private privateKey: string;
-  private contractAddress: string;
-  private provider: AlchemyProvider;
-  private wallet: Wallet;
-  private signer: Signer;
-  private contract: Contract;
+  private contractAddress: Address;
   constructor(private readonly configService: ConfigService) {
-    this.network = this.configService.get<string>('heartbit.network');
-    this.alchemyApiKey = this.configService.get<string>(
-      'heartbit.alchemyApiKey',
+    const contractAddress = this.configService.get<string>(
+      'heartbit.contarctAddress',
     );
-    this.privateKey = this.configService.get<string>('heartbit.privateKey');
-    this.contractAddress = this.configService.get<string>(
-      'heartbit.contractAddress',
-    );
-    if (
-      !this.network ||
-      !this.alchemyApiKey ||
-      !this.privateKey ||
-      !this.contractAddress
-    ) {
-      throw new Error('Missing configuration');
-    }
-    this.provider = new ethers.AlchemyProvider(
-      this.network,
-      this.alchemyApiKey,
-    );
-    this.wallet = new ethers.Wallet(this.privateKey, this.provider);
-    this.signer = new ethers.NonceManager(this.wallet);
-    this.contract = new ethers.Contract(this.contractAddress, ABI, this.signer);
+    this.contractAddress = contractAddress as any;
   }
 
   mintHeartbit = async (input: MintInput): Promise<MintResponse> => {
-    const txn = await this.contract.mint(
-      input.account,
-      input.startTime,
-      input.endTime,
-      input.hash,
-      '0x00',
-    );
-    (async () => {
-      await txn.wait();
-    })();
-    return { success: true, txnHash: txn.hash };
+    console.log(input);
+    const entryPoint = '0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789';
+    const paymasterClient = createPimlicoPaymasterClient({
+      transport: http(paymasterUrl),
+    });
+    const publicClient = createPublicClient({
+      transport: http('https://rpc.ankr.com/eth_sepolia'),
+      chain: sepolia,
+    });
+    const signer = privateKeyToAccount(this.privateKey as any);
+
+    const safeAccount = await privateKeyToSafeSmartAccount(publicClient, {
+      signer: signer,
+      safeVersion: '1.4.1',
+      entryPoint, // global entrypoint
+    });
+    console.log(safeAccount.address);
+    const smartAccountClient = createSmartAccountClient({
+      account: safeAccount,
+      chain: sepolia,
+      transport: http(bundlerUrl),
+      sponsorUserOperation: paymasterClient.sponsorUserOperation,
+    })
+      .extend(bundlerActions)
+      .extend(pimlicoBundlerActions);
+    const callData = await safeAccount.encodeCallData({
+      to: this.contractAddress,
+      data: encodeFunctionData({
+        abi: ABI,
+        functionName: 'mint',
+        args: [
+          input.account,
+          input.startTime,
+          input.endTime,
+          input.hash,
+          '0x00',
+        ],
+      }),
+      value: BigInt(0),
+    });
+
+    const userOperation = await smartAccountClient.prepareUserOperationRequest({
+      userOperation: {
+        callData, // callData is the only required field in the partial user operation
+      },
+      account: safeAccount,
+    });
+    userOperation.signature =
+      await safeAccount.signUserOperation(userOperation);
+    const txnHash = await smartAccountClient.sendUserOperation({
+      userOperation,
+      entryPoint,
+    });
+    return { success: true, txnHash };
   };
 
   addressMint = async (input: AddressMintInput): Promise<MintResponse> => {
@@ -74,8 +104,10 @@ export class HeartbitService {
   };
 
   async recover(input: RecoverAddressInput): Promise<RecoverAddressResponse> {
-    const data = await ethers.hashMessage(input.message);
-    const account = await ethers.recoverAddress(data, input.signature);
+    const account = await recoverMessageAddress({
+      message: input.message,
+      signature: input.signature as any,
+    });
     return { account };
   }
 
