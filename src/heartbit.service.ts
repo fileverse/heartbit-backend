@@ -2,7 +2,7 @@ import { ConfigService } from '@nestjs/config';
 import * as ABI from './abi.json';
 import {
   type Address,
-  createPublicClient,
+  createClient,
   encodeFunctionData,
   http,
   recoverMessageAddress,
@@ -14,7 +14,6 @@ import { privateKeyToSafeSmartAccount } from 'permissionless/accounts';
 import { bundlerActions, createSmartAccountClient } from 'permissionless';
 import { pimlicoBundlerActions } from 'permissionless/actions/pimlico';
 import { sepolia } from 'viem/chains';
-import { privateKeyToAccount } from 'viem/accounts';
 
 const apiKey = process.env.PIMLICO_API_KEY;
 const paymasterUrl = `https://api.pimlico.io/v2/sepolia/rpc?apikey=${apiKey}`;
@@ -47,14 +46,14 @@ export class HeartbitService {
     const paymasterClient = createPimlicoPaymasterClient({
       transport: http(paymasterUrl),
     });
-    const publicClient = createPublicClient({
+
+    const publicClient = createClient({
       transport: http('https://rpc.ankr.com/eth_sepolia'),
       chain: sepolia,
     });
-    const signer = privateKeyToAccount(this.privateKey as any);
 
     const safeAccount = await privateKeyToSafeSmartAccount(publicClient, {
-      signer: signer,
+      privateKey: this.privateKey as any,
       safeVersion: '1.4.1',
       entryPoint, // global entrypoint
     });

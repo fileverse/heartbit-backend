@@ -18,7 +18,8 @@
     "strictBindCallApply": false,
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "strictFunctionTypes": false
   },
   "include": ["./src/**/*.*"],
   "exclude": [
