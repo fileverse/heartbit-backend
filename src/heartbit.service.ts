@@ -66,7 +66,8 @@ export class HeartbitService {
       '0x00',
     );
     (async () => {
-      await txn.wait();
+      const txnReciept = await txn.wait();
+      this.logger.log(txnReciept);
     })();
     const response = { success: true, txnHash: txn.hash };
     this.logger.debug(response);
