@@ -1,43 +1,46 @@
-# Heartbit Backend
+# Heartbit Backend Documentation
 
 ## Introduction
+
 Relayer Backend for [HeartBit](https://github.com/fileverse/HeartBitSDK) by fileverse.
 
 ## Getting Started
 
-
-
 ### Prerequisites
-- Nodejs
+
+Before you begin, ensure you have the following installed:
+- Node.js
 
 ### Installation
-After cloning the repo:
-```javascript 
-git clone https://github.com/fileverse/heartbit-backend.git
-```
-You can install the dependencies using `npm` or `yarn`
 
+To set up the Heartbit Backend on your local machine, follow these steps:
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/fileverse/heartbit-backend.git
+2. Navigate into the cloned directory:
+    ```bash
+    cd heartbit-backend
+
+3. Install the necessary dependencies using NPM or Yarn:
+   ```bash
+   npm install
+   or
+   yarn
+
+### Running the Application
+To run the Heartbit Backend in development mode, use one of the following commands:
 ```javascript
-npm install
-
-// or
-
-yarn
-```
-Run the app 
-```javascript
-npm run start:dev
-
-// or
-
-yarn start:dev
+  npm run start:dev
+  or
+  yarn start:dev
 ```
 
 ### Usage
-The backend facilitates the Heartbit mint functionality by accepting post requests with either the signature or the user wallet address
+The backend facilitates the Heartbit mint functionality by accepting POST requests. These requests can contain either the user's signature or the user wallet address to initiate the minting process.
 
-#### Example request for minting using a signature
-
+#### Minting Using a Signature
+To mint using a signature, send a POST request as shown below:
 ```javascript
 curl --request POST \
   --url http://localhost:3000/signed-mint \
@@ -51,8 +54,8 @@ curl --request POST \
 }
 ```
 
-
-#### Example request for minting using the user wallet address
+#### Minting Using the User Wallet Address
+To mint using the user wallet address, send a POST request as follows:
 
 ```javascript
 curl --request POST \
