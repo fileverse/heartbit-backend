@@ -3,6 +3,7 @@ import * as ABI from './abi.json';
 import {
   ethers,
   type AlchemyProvider,
+  type JsonRpcProvider,
   type Wallet,
   type Signer,
   type Contract,
@@ -24,9 +25,10 @@ export class HeartbitService {
 
   private network: string;
   private alchemyApiKey: string;
+  private gnosisRpc: string;
   private privateKey: string;
   private contractAddress: string;
-  private provider: AlchemyProvider;
+  private provider: AlchemyProvider | JsonRpcProvider;
   private wallet: Wallet;
   private signer: Signer;
   private contract: Contract;
@@ -35,22 +37,35 @@ export class HeartbitService {
     this.alchemyApiKey = this.configService.get<string>(
       'heartbit.alchemyApiKey',
     );
+    this.gnosisRpc = this.configService.get<string>('heartbit.gnosisRpc');
     this.privateKey = this.configService.get<string>('heartbit.privateKey');
     this.contractAddress = this.configService.get<string>(
       'heartbit.contractAddress',
     );
-    if (
-      !this.network ||
-      !this.alchemyApiKey ||
-      !this.privateKey ||
-      !this.contractAddress
-    ) {
+
+    if (this.network === 'gnosis' && !this.gnosisRpc) {
+      throw new Error('Missing gnosis configuration');
+    }
+
+    if (this.network !== 'gnosis' && !this.alchemyApiKey) {
+      throw new Error('Missing rpc configuration');
+    }
+
+    if (!this.privateKey || !this.contractAddress) {
+      throw new Error('Missing contract configuration');
+    }
+
+    if (!this.network || !this.privateKey || !this.contractAddress) {
       throw new Error('Missing configuration');
     }
-    this.provider = new ethers.AlchemyProvider(
-      this.network,
-      this.alchemyApiKey,
-    );
+    if (this.network !== 'gnosis') {
+      this.provider = new ethers.AlchemyProvider(
+        this.network,
+        this.alchemyApiKey,
+      );
+    } else {
+      this.provider = new ethers.JsonRpcProvider(this.gnosisRpc);
+    }
     this.wallet = new ethers.Wallet(this.privateKey, this.provider);
     this.signer = new ethers.NonceManager(this.wallet);
     this.contract = new ethers.Contract(this.contractAddress, ABI, this.signer);
