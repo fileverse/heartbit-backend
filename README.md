@@ -1,8 +1,8 @@
-# Heartbit Backend Documentation
+# HeartBit Backend Documentation
 
 ## Introduction
 
-Relayer Backend for [HeartBit](https://github.com/fileverse/HeartBitSDK) by fileverse. leveraging Smart Accounts with Safe Protocol enabled via Pimlico.
+Relayer Backend for [HeartBit](https://github.com/fileverse/HeartBitSDK) by Fileverse, leveraging Smart Accounts with Safe Protocol enabled via Pimlico.
 
 
 ## Getting Started
