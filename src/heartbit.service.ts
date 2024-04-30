@@ -32,6 +32,7 @@ export class HeartbitService {
   private wallet: Wallet;
   private signer: Signer;
   private contract: Contract;
+  private nonceOffset: number;
   constructor(private readonly configService: ConfigService) {
     this.network = this.configService.get<string>('heartbit.network');
     this.alchemyApiKey = this.configService.get<string>(
@@ -69,16 +70,27 @@ export class HeartbitService {
     this.wallet = new ethers.Wallet(this.privateKey, this.provider);
     this.signer = new ethers.NonceManager(this.wallet);
     this.contract = new ethers.Contract(this.contractAddress, ABI, this.signer);
+    this.nonceOffset = 0;
   }
+
+
+  getNonce = async () => {
+    const baseNonce = this.provider.getTransactionCount(this.wallet.address);
+    return baseNonce.then((nonce) => nonce + this.nonceOffset++);
+  };
 
   mintHeartbit = async (input: MintInput): Promise<MintResponse> => {
     this.logger.debug(input);
+
     const txn = await this.contract.mint(
       input.account,
       input.startTime,
       input.endTime,
       input.hash,
       '0x00',
+      {
+        nonce: await this.getNonce(),
+      }
     );
     (async () => {
       const txnReciept = await txn.wait();
