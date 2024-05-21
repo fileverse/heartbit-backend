@@ -79,9 +79,11 @@ export class HeartbitService {
     return baseNonce.then((nonce) => nonce + this.nonceOffset++);
   };
 
+  
   mintHeartbit = async (input: MintInput): Promise<MintResponse> => {
     this.logger.debug(input);
-
+    const feeData = await this.provider.getFeeData();
+    
     const txn = await this.contract.mint(
       input.account,
       input.startTime,
@@ -90,8 +92,11 @@ export class HeartbitService {
       '0x00',
       {
         nonce: await this.getNonce(),
+        maxFeePerGas: feeData.maxFeePerGas,
+        maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
       }
     );
+    
     (async () => {
       const txnReciept = await txn.wait();
       this.logger.log(txnReciept);
@@ -109,8 +114,8 @@ export class HeartbitService {
   };
 
   async recover(input: RecoverAddressInput): Promise<RecoverAddressResponse> {
-    const data = await ethers.hashMessage(input.message);
-    const account = await ethers.recoverAddress(data, input.signature);
+    const data = ethers.hashMessage(input.message);
+    const account = ethers.recoverAddress(data, input.signature);
     return { account };
   }
 
