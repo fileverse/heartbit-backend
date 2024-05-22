@@ -70,7 +70,7 @@ export class HeartbitService {
     this.wallet = new ethers.Wallet(this.privateKey, this.provider);
     this.signer = new ethers.NonceManager(this.wallet);
     this.contract = new ethers.Contract(this.contractAddress, ABI, this.signer);
-    this.nonceOffset = 0;
+    this.nonceOffset = 3;
   }
 
 
@@ -98,8 +98,12 @@ export class HeartbitService {
     );
     
     (async () => {
-      const txnReciept = await txn.wait();
-      this.logger.log(txnReciept);
+      try {
+        const txnReciept = await txn.wait();
+        this.logger.log("txnReceipt:", txnReciept);
+      } catch (error) {
+        this.logger.error("txnReceipt error:",error);
+      }
     })();
     const response = { success: true, txnHash: txn.hash };
     this.logger.debug(response);
