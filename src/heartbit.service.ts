@@ -102,7 +102,7 @@ export class HeartbitService {
         const txnReciept = await txn.wait();
         this.logger.log("txnReceipt:", txnReciept);
       } catch (error) {
-        this.logger.error("txnReceipt error:",error);
+        this.logger.error("txn:", txn, "failed due to error:",error);
       }
     })();
     const response = { success: true, txnHash: txn.hash };
