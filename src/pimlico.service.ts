@@ -23,6 +23,8 @@ import MintParams from "./dtos/mint-params";
 import MintResponse from "./dtos/mint.response";
 import { supportedChains } from "./dtos/supported-chains";
 
+import {ENTRYPOINT_ADDRESS_V06_TYPE} from "permissionless/types/entrypoint";
+
 interface UserOperationReceiptParams {
   txnHash: string;
 }
@@ -40,7 +42,7 @@ function resolveViemChainInstance(chain: keyof typeof supportedChains): Chain | 
 
 class Pimlico {
   name: string;
-  entryPoint: string;
+  entryPoint: ENTRYPOINT_ADDRESS_V06_TYPE;
   rpcUrl: string;
   hasAgent: boolean;
   chain: Chain;
@@ -56,7 +58,7 @@ class Pimlico {
 
   constructor({ apiKey, chain, rpcUrl }: PimlicoConfig) {
     this.name = "Pimlico";
-    this.entryPoint = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
+    this.entryPoint = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789" as ENTRYPOINT_ADDRESS_V06_TYPE;
     this.rpcUrl = rpcUrl;
     this.hasAgent = false;
     this.chain = resolveViemChainInstance(chain);
@@ -70,12 +72,14 @@ class Pimlico {
   async setup() {
     this.hasAgent = true;
     this.key = 0;
-    this.paymasterClient = createPimlicoPaymasterClient({
-      transport: http(this.paymasterUrl),
-    });
+      this.paymasterClient = createPimlicoPaymasterClient({
+          transport: http(this.paymasterUrl),
+          entryPoint: this.entryPoint,
+      });
 
     this.bundlerClient = createPimlicoBundlerClient({
-      transport: http(this.bundlerUrl),
+        transport: http(this.bundlerUrl),
+        entryPoint: this.entryPoint,
     });
 
     this.publicClient = createPublicClient({
@@ -86,23 +90,24 @@ class Pimlico {
     this.safeAccount = await privateKeyToSafeSmartAccount(this.publicClient, {
       privateKey: process.env.PRIVATE_KEY as `0x${string}`,
       safeVersion: "1.4.1",
-      entryPoint: this.entryPoint as `0x${string}`, // global entrypoint
+      entryPoint: this.entryPoint, // global entrypoint
       address: process.env.PIMLICO_ADDRESS as `0x${string}`,
     });
 
       this.nonce = await getAccountNonce(this.publicClient, {
           sender: this.safeAccount.address,
-          entryPoint: this.entryPoint as `0x${string}`
+          entryPoint: this.entryPoint,
       });
 
-    this.smartAccountClient = createSmartAccountClient({
-      account: this.safeAccount,
-      chain: sepolia,
-      transport: http(this.bundlerUrl),
-      sponsorUserOperation: this.paymasterClient.sponsorUserOperation,
-    })
-      .extend(bundlerActions)
-      .extend(pimlicoBundlerActions);
+      this.smartAccountClient = createSmartAccountClient({
+          account: this.safeAccount,
+          entryPoint: this.entryPoint,
+          chain: sepolia,
+          bundlerTransport: http(this.bundlerUrl),
+          middleware: {
+              sponsorUserOperation: this.paymasterClient.sponsorUserOperation,
+          }
+      });
   }
 
   async getCallData({ account, startTime, endTime, hash }: CallDataParams) {
